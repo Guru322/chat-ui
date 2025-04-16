@@ -9,21 +9,21 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
-  streamingMessage?: string;
-  isTyping?: boolean;
+  streamingMessage: string;
+  isTyping: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({ 
   messages, 
   isLoading, 
-  streamingMessage = '',
-  isTyping = false
+  streamingMessage, 
+  isTyping 
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, overflowY: 'auto', padding: 2 }}>
       {messages.length === 0 ? (
         <Box sx={{ 
           display: 'flex', 
@@ -64,9 +64,10 @@ const MessageList: React.FC<MessageListProps> = ({
                 maxWidth: isMobile ? '85%' : '75%',
                 p: isMobile ? 1.5 : 2,
                 borderRadius: 2,
-                bgcolor: message.isUser ? 'primary.dark' : 'background.paper',
+                bgcolor: message.isUser ? 'primary.main' : 'background.paper',
+                color: message.isUser ? 'primary.contrastText' : 'text.primary',
                 boxShadow: 1,
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
               }}
             >
               <Typography 
@@ -82,7 +83,7 @@ const MessageList: React.FC<MessageListProps> = ({
           </Box>
         ))
       )}
-      
+
       {/* Display streaming message with typing effect */}
       {(isLoading || streamingMessage) && (
         <Box
