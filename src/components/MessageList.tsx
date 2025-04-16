@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, CircularProgress, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 
 interface Message {
   text: string;
@@ -78,7 +78,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamin
       )}
       
       {/* Display streaming message while it's being received */}
-      {streamingMessage && (
+      {(isLoading || streamingMessage) && (
         <Box
           sx={{
             display: 'flex',
@@ -103,33 +103,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamin
                 fontSize: isMobile ? '0.9rem' : '1rem'
               }}
             >
-              {streamingMessage}
+              {streamingMessage || ""}
+              {isLoading && !streamingMessage && (
+                <span className="typing-cursor">▋</span>
+              )}
+              {streamingMessage && (
+                <span className="typing-cursor blink">▋</span>
+              )}
             </Typography>
-          </Box>
-        </Box>
-      )}
-      
-      {/* Show loading indicator only when there's no streaming message yet */}
-      {isLoading && !streamingMessage && (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            mb: 2,
-          }}
-        >
-          <Box
-            sx={{
-              p: isMobile ? 1.5 : 2,
-              borderRadius: 2,
-              bgcolor: 'background.paper',
-              boxShadow: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <CircularProgress size={isMobile ? 16 : 20} sx={{ mr: 1 }} />
-            <Typography variant={isMobile ? "body2" : "body1"}>Thinking...</Typography>
           </Box>
         </Box>
       )}
