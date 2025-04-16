@@ -13,10 +13,10 @@ class OllamaService {
   private baseUrl: string;
   private model: string;
 
-  constructor() {
-    this.baseUrl = 'http://localhost:11434/api/generate';
-    this.model = 'hf.co/Guru322/Gurus-text-model:latest';
-  }
+constructor() {
+  this.baseUrl = '/api/generate'; // f cors
+  this.model = 'hf.co/Guru322/Gurus-text-model:latest';
+}
 
   /**
    * Enforces rate limiting by waiting if needed
