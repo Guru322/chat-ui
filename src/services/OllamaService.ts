@@ -14,7 +14,7 @@ class OllamaService {
   private model: string;
 
   constructor() {
-    this.baseUrl = 'https://ollama.gurucharan.me/api/generate';
+    this.baseUrl = 'http://127.0.0.1:11434/api/generate';
     this.model = 'hf.co/Guru322/Gurus-text-model:latest';
   }
 
