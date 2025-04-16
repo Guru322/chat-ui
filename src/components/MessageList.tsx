@@ -9,9 +9,10 @@ interface Message {
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  streamingMessage?: string;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamingMessage = '' }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
@@ -76,7 +77,40 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
         ))
       )}
       
-      {isLoading && (
+      {/* Display streaming message while it's being received */}
+      {streamingMessage && (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-start',
+            mb: 2,
+          }}
+        >
+          <Box
+            sx={{
+              maxWidth: isMobile ? '85%' : '75%',
+              p: isMobile ? 1.5 : 2,
+              borderRadius: 2,
+              bgcolor: 'background.paper',
+              boxShadow: 1,
+              wordBreak: 'break-word'
+            }}
+          >
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                whiteSpace: 'pre-wrap',
+                fontSize: isMobile ? '0.9rem' : '1rem'
+              }}
+            >
+              {streamingMessage}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+      
+      {/* Show loading indicator only when there's no streaming message yet */}
+      {isLoading && !streamingMessage && (
         <Box
           sx={{
             display: 'flex',

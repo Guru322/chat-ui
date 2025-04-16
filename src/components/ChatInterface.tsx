@@ -16,14 +16,15 @@ import { ollamaService } from '../services/OllamaService';
 const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Array<{text: string, isUser: boolean}>>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Scroll to bottom whenever messages change
+  // Scroll to bottom whenever messages change or streaming message updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingMessage]);
 
   const handleSendMessage = async (message: string) => {
     if (!message.trim()) return;
@@ -31,13 +32,24 @@ const ChatInterface: React.FC = () => {
     // Add user message to chat
     setMessages(prev => [...prev, { text: message, isUser: true }]);
     setIsLoading(true);
+    setStreamingMessage(''); // Reset streaming message
     
     try {
-      // Call the Ollama API service
-      const response = await ollamaService.sendMessage(message);
-      
-      // Add AI response to chat
-      setMessages(prev => [...prev, { text: response, isUser: false }]);
+      // Call the Ollama API service with streaming updates
+      await ollamaService.sendMessage(
+        message,
+        (text, done) => {
+          // Update the streaming message as chunks arrive
+          setStreamingMessage(text);
+          
+          // When streaming is complete, add the final message to the chat
+          if (done) {
+            setMessages(prev => [...prev, { text, isUser: false }]);
+            setStreamingMessage('');
+            setIsLoading(false);
+          }
+        }
+      );
     } catch (error) {
       console.error('Error sending message:', error);
       // Add error message to chat
@@ -45,7 +57,7 @@ const ChatInterface: React.FC = () => {
         text: "Sorry, there was an error communicating with the AI service. Please try again.", 
         isUser: false 
       }]);
-    } finally {
+      setStreamingMessage('');
       setIsLoading(false);
     }
   };
@@ -97,7 +109,11 @@ const ChatInterface: React.FC = () => {
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <MessageList messages={messages} isLoading={isLoading} />
+            <MessageList 
+              messages={messages} 
+              isLoading={isLoading} 
+              streamingMessage={streamingMessage}
+            />
             <div ref={messagesEndRef} />
           </Box>
           

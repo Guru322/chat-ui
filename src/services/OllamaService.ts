@@ -4,19 +4,21 @@ import axios from 'axios';
 const RATE_LIMIT_INTERVAL = 1000; // 1 second in milliseconds
 let lastRequestTime = 0;
 
-interface OllamaResponse {
+interface OllamaStreamResponse {
+  model: string;
+  created_at: string;
   response: string;
-  [key: string]: any;
+  done: boolean;
 }
 
 class OllamaService {
   private baseUrl: string;
   private model: string;
 
-constructor() {
-  this.baseUrl = '/api/generate'; // f cors
-  this.model = 'hf.co/Guru322/Gurus-text-model:latest';
-}
+  constructor() {
+    this.baseUrl = '/api/generate'; // for cors
+    this.model = 'hf.co/Guru322/Gurus-text-model:latest';
+  }
 
   /**
    * Enforces rate limiting by waiting if needed
@@ -35,11 +37,29 @@ constructor() {
   }
 
   /**
-   * Sends a message to the Ollama API with rate limiting
-   * @param prompt User message to send to the API
-   * @returns Promise with the API response
+   * Parses a chunk of streaming response data
+   * @param chunk Raw chunk data from the stream
+   * @returns Parsed JSON object or null if parsing fails
    */
-  public async sendMessage(prompt: string): Promise<string> {
+  private parseStreamChunk(chunk: string): OllamaStreamResponse | null {
+    try {
+      return JSON.parse(chunk) as OllamaStreamResponse;
+    } catch (error) {
+      console.error('Error parsing stream chunk:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Sends a message to the Ollama API with rate limiting and handles streaming response
+   * @param prompt User message to send to the API
+   * @param onUpdate Callback function to receive incremental updates
+   * @returns Promise with the complete API response
+   */
+  public async sendMessage(
+    prompt: string, 
+    onUpdate?: (text: string, done: boolean) => void
+  ): Promise<string> {
     try {
       // Enforce rate limiting
       await this.enforceRateLimit();
@@ -47,8 +67,8 @@ constructor() {
       // Format the prompt as required by the API
       const formattedPrompt = `### Instruction:\n${prompt}\n### Response:`;
       
-      // Make the API request
-      const response = await axios.post<OllamaResponse>(
+      // Make the API request with responseType 'stream'
+      const response = await axios.post(
         this.baseUrl,
         {
           model: this.model,
@@ -57,12 +77,37 @@ constructor() {
         {
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          responseType: 'text',
+          // Use transformResponse to prevent automatic JSON parsing
+          transformResponse: [(data) => data]
         }
       );
       
-      // Return the response text
-      return response.data.response;
+      // Process the streaming response
+      let fullResponse = '';
+      const chunks = response.data.split('\n').filter((chunk: string) => chunk.trim() !== '');
+      
+      for (const chunk of chunks) {
+        const parsedChunk = this.parseStreamChunk(chunk);
+        
+        if (parsedChunk) {
+          // Append the response text to the full response
+          fullResponse += parsedChunk.response;
+          
+          // Call the update callback if provided
+          if (onUpdate) {
+            onUpdate(fullResponse, parsedChunk.done);
+          }
+          
+          // If this is the final chunk, we're done
+          if (parsedChunk.done) {
+            break;
+          }
+        }
+      }
+      
+      return fullResponse;
     } catch (error) {
       console.error('Error calling Ollama API:', error);
       
