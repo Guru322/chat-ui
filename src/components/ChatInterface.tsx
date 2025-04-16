@@ -17,6 +17,7 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<Array<{text: string, isUser: boolean}>>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -33,20 +34,27 @@ const ChatInterface: React.FC = () => {
     setMessages(prev => [...prev, { text: message, isUser: true }]);
     setIsLoading(true);
     setStreamingMessage(''); // Reset streaming message
+    setIsTyping(false);
     
     try {
-      // Call the Ollama API service with streaming updates
+      // Call the Ollama API service with character-by-character streaming updates
       await ollamaService.sendMessage(
         message,
-        (text, done) => {
-          // Update the streaming message as chunks arrive
-          setStreamingMessage(text);
+        (fullText, newChar, done) => {
+          // Set typing state to true when we start receiving characters
+          if (!isTyping && newChar) {
+            setIsTyping(true);
+          }
+          
+          // Update the streaming message with each new character
+          setStreamingMessage(fullText);
           
           // When streaming is complete, add the final message to the chat
           if (done) {
-            setMessages(prev => [...prev, { text, isUser: false }]);
+            setMessages(prev => [...prev, { text: fullText, isUser: false }]);
             setStreamingMessage('');
             setIsLoading(false);
+            setIsTyping(false);
           }
         }
       );
@@ -59,6 +67,7 @@ const ChatInterface: React.FC = () => {
       }]);
       setStreamingMessage('');
       setIsLoading(false);
+      setIsTyping(false);
     }
   };
 
@@ -113,6 +122,7 @@ const ChatInterface: React.FC = () => {
               messages={messages} 
               isLoading={isLoading} 
               streamingMessage={streamingMessage}
+              isTyping={isTyping}
             />
             <div ref={messagesEndRef} />
           </Box>

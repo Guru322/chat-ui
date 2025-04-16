@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 
 interface Message {
@@ -10,9 +10,15 @@ interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   streamingMessage?: string;
+  isTyping?: boolean;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamingMessage = '' }) => {
+const MessageList: React.FC<MessageListProps> = ({ 
+  messages, 
+  isLoading, 
+  streamingMessage = '',
+  isTyping = false
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
@@ -77,7 +83,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamin
         ))
       )}
       
-      {/* Display streaming message while it's being received */}
+      {/* Display streaming message with typing effect */}
       {(isLoading || streamingMessage) && (
         <Box
           sx={{
@@ -103,13 +109,11 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, streamin
                 fontSize: isMobile ? '0.9rem' : '1rem'
               }}
             >
-              {streamingMessage || ""}
-              {isLoading && !streamingMessage && (
-                <span className="typing-cursor">▋</span>
-              )}
-              {streamingMessage && (
+              {streamingMessage}
+              {/* Show blinking cursor when waiting for first character or while typing */}
+              {(isLoading && !streamingMessage) || isTyping ? (
                 <span className="typing-cursor blink">▋</span>
-              )}
+              ) : null}
             </Typography>
           </Box>
         </Box>

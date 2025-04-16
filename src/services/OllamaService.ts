@@ -53,12 +53,12 @@ class OllamaService {
   /**
    * Sends a message to the Ollama API with rate limiting and handles streaming response
    * @param prompt User message to send to the API
-   * @param onUpdate Callback function to receive incremental updates
+   * @param onUpdate Callback function to receive character-by-character updates
    * @returns Promise with the complete API response
    */
   public async sendMessage(
     prompt: string, 
-    onUpdate?: (text: string, done: boolean) => void
+    onUpdate?: (text: string, newChar: string, done: boolean) => void
   ): Promise<string> {
     try {
       // Enforce rate limiting
@@ -92,12 +92,15 @@ class OllamaService {
         const parsedChunk = this.parseStreamChunk(chunk);
         
         if (parsedChunk) {
-          // Append the response text to the full response
-          fullResponse += parsedChunk.response;
+          // Get the new character from this chunk
+          const newChar = parsedChunk.response;
+          
+          // Append the response character to the full response
+          fullResponse += newChar;
           
           // Call the update callback if provided
           if (onUpdate) {
-            onUpdate(fullResponse, parsedChunk.done);
+            onUpdate(fullResponse, newChar, parsedChunk.done);
           }
           
           // If this is the final chunk, we're done
